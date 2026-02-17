@@ -2,19 +2,18 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	"github.com/boswin/gems-auction-backend/config"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// Load configuration
+	config.LoadConfig()
 
-	port := os.Getenv("PORT")
+	// Connect to database
+	config.ConnectDatabase()
+	defer config.CloseDatabase()
 
 	r := gin.Default()
 
@@ -24,5 +23,8 @@ func main() {
 		})
 	})
 
+	port := config.AppConfig.Port
+
+	log.Println("🚀 Server running on port:", port)
 	r.Run(":" + port)
 }

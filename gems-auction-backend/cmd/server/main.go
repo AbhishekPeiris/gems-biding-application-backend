@@ -11,6 +11,8 @@ import (
 	"github.com/boswin/gems-auction-backend/internal/repository"
 	"github.com/boswin/gems-auction-backend/internal/service"
 	"github.com/boswin/gems-auction-backend/internal/websocket"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,7 +53,7 @@ func main() {
 	chatService := service.NewChatService(chatRepo, wsManager)
 	paymentService := service.NewPaymentService()
 
-	_ = paymentService // placeholder for future use
+	_ = paymentService
 
 	// ===============================
 	// 6️⃣ Initialize Handlers
@@ -68,12 +70,24 @@ func main() {
 	// ===============================
 	r := gin.New()
 
-	// Global middlewares
+	// Logging + Recovery
 	r.Use(middleware.LoggingMiddleware())
 	r.Use(gin.Recovery())
 
 	// ===============================
-	// 8️⃣ Health Check Route
+	// 🔥 CORS CONFIGURATION (IMPORTANT FIX)
+	// ===============================
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
+	// ===============================
+	// 8️⃣ Health Check
 	// ===============================
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -84,7 +98,7 @@ func main() {
 	})
 
 	// ===============================
-	// 9️⃣ WebSocket Route (Public Upgrade)
+	// 9️⃣ WebSocket Route
 	// ===============================
 	wsHandler.RegisterRoutes(r)
 
@@ -106,13 +120,11 @@ func main() {
 	// =====================================
 	gems := protected.Group("/gems")
 
-	// Only SELLER or ADMIN can create gems
 	gems.POST("",
 		middleware.RoleMiddleware("SELLER", "ADMIN"),
 		gemHandler.CreateGem,
 	)
 
-	// Anyone authenticated can view
 	gems.GET("/:id", gemHandler.GetGemByID)
 
 	// =====================================
@@ -120,7 +132,6 @@ func main() {
 	// =====================================
 	auctions := protected.Group("/auctions")
 
-	// Only SELLER or ADMIN can create auctions
 	auctions.POST("",
 		middleware.RoleMiddleware("SELLER", "ADMIN"),
 		auctionHandler.CreateAuction,
@@ -128,13 +139,11 @@ func main() {
 
 	auctions.GET("/:id", auctionHandler.GetAuctionByID)
 
-	// Only SELLER or ADMIN can start auction
 	auctions.POST("/:id/start",
 		middleware.RoleMiddleware("SELLER", "ADMIN"),
 		auctionHandler.StartAuction,
 	)
 
-	// Only SELLER or ADMIN can end auction
 	auctions.POST("/:id/end",
 		middleware.RoleMiddleware("SELLER", "ADMIN"),
 		auctionHandler.EndAuction,
@@ -145,7 +154,6 @@ func main() {
 	// =====================================
 	bids := protected.Group("/bids")
 
-	// Only BUYER or ADMIN can place bid
 	bids.POST("",
 		middleware.RoleMiddleware("BUYER", "ADMIN"),
 		bidHandler.PlaceBid,
@@ -156,7 +164,6 @@ func main() {
 	// =====================================
 	chat := protected.Group("/chat")
 
-	// Any authenticated user can chat
 	chat.POST("", chatHandler.SendChat)
 	chat.GET("/auction/:id", chatHandler.GetChatByAuction)
 

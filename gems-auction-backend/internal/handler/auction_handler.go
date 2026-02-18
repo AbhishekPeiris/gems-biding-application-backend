@@ -131,3 +131,13 @@ func parseIDParam(c *gin.Context, param string) (int64, bool) {
 	}
 	return id, true
 }
+
+func (h *AuctionHandler) GetAllAuctions(c *gin.Context) {
+	auctions, err := h.auctionService.GetAllAuctions()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, auctions)
+}
+

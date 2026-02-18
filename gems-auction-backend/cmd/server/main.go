@@ -137,6 +137,7 @@ func main() {
 		auctionHandler.CreateAuction,
 	)
 
+	auctions.GET("", auctionHandler.GetAllAuctions)
 	auctions.GET("/:id", auctionHandler.GetAuctionByID)
 
 	auctions.POST("/:id/start",

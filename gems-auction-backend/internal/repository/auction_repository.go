@@ -41,3 +41,44 @@ func (r *AuctionRepository) UpdateCurrentPrice(id int64, price float64) error {
 	_, err := config.DB.Exec(context.Background(), query, price, time.Now(), id)
 	return err
 }
+
+func (r *AuctionRepository) GetAll() ([]domain.Auction, error) {
+	query := `
+		SELECT id, gem_id, start_price, current_price, min_increment,
+		       start_time, end_time, status, created_at, updated_at
+		FROM auctions
+		ORDER BY created_at DESC
+	`
+
+	rows, err := config.DB.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auctions []domain.Auction
+
+	for rows.Next() {
+		var a domain.Auction
+		err := rows.Scan(
+			&a.ID,
+			&a.GemID,
+			&a.StartPrice,
+			&a.CurrentPrice,
+			&a.MinIncrement,
+			&a.StartTime,
+			&a.EndTime,
+			&a.Status,
+			&a.CreatedAt,
+			&a.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		auctions = append(auctions, a)
+	}
+
+	return auctions, nil
+}
+
+

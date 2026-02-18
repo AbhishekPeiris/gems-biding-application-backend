@@ -107,3 +107,7 @@ func (s *AuctionService) GetByID(auctionID int64) (*domain.Auction, error) {
 	}
 	return &a, nil
 }
+
+func (s *AuctionService) GetAllAuctions() ([]domain.Auction, error) {
+	return s.auctionRepo.GetAll()
+}
